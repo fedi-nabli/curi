@@ -8,6 +8,7 @@ typedef enum
   HTTP,
   HTTPS,
   FTP,
+  FTPS,
   SMTP,
   CUSTOM
 } ProtocolType;
@@ -55,5 +56,9 @@ struct uri
   struct domain* domain;
   struct path_part* head;
 };
+
+struct uri* parse_uri(const char* unparsed_url);
+void free_uri(struct uri* uri);
+void print_uri(struct uri* uri);
 
 #endif
