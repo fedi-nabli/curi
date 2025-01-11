@@ -34,16 +34,18 @@ struct domain
   const char* extension;
 };
 
+struct variable
+{
+  const char* name;
+  const char* value;
+  VariableType type;
+};
+
 struct path_part
 {
   const char* path_part;
   bool is_variable;
-  struct variable
-  {
-    const char* name;
-    const char* value;
-    VariableType type;
-  } variable;
+  struct variable* variable;
   struct path_part* prev;
   struct path_part* next;
 };

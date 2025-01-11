@@ -34,10 +34,53 @@ static struct protocol* create_protocol(const char* protocol_name)
   return proto;
 }
 
+static struct domain* parse_domain(const char* uri)
+{
+  struct domain* domain = malloc(sizeof(struct domain));
+  char* temp = strdup(uri);
+  char* save_ptr;
+
+  char* part = strtok_r(temp, ".", &save_ptr);
+  domain->subdomain = strdup(part);
+
+  part = strtok_r(NULL, ".", &save_ptr);
+  if (part)
+    domain->domain = strdup(part);
+
+  part = strtok_r(NULL, ".", &save_ptr);
+  if (part)
+    domain->extension = strdup(part);
+
+  free(temp);
+  
+  return domain;
+}
+
 struct uri* parse_uri(const char* unparsed_url)
 {
   struct uri* parsed_uri = malloc(sizeof(struct uri));
   parsed_uri->full_path = strdup(unparsed_url);
+
+  char* temp = strdup(unparsed_url);
+  char* rest = temp;
+  char* token;
+
+  // Parse protocol
+  const char* delimiter = strstr(unparsed_url, "://");
+  if (!delimiter)
+  {
+    return NULL;
+  }
+
+  token = strsep(&rest, "://");
+  parsed_uri->protocol = create_protocol(token);
+  rest += 2;
+
+  // Parse domain
+  token = strsep(&rest, "/");
+  parsed_uri->domain = parse_domain(token);
+
+  free(temp);
 
   return parsed_uri;
 }
@@ -45,30 +88,36 @@ struct uri* parse_uri(const char* unparsed_url)
 void print_uri(struct uri* uri)
 {
   printf("Full URI: %s\n", uri->full_path);
+  printf("URI Protocol:\n");
+  printf("  Protocol name: %s\n", uri->protocol->name);
+  printf("URI Domain:\n");
+  printf("  Domain subdomain: %s\n", uri->domain->subdomain);
+  printf("  Domain main: %s\n", uri->domain->domain);
+  printf("  Domain extension: %s\n", uri->domain->extension);
 }
 
 void free_uri(struct uri* uri)
 {
   if (!uri)
-    return
+    return;
 
-  free(uri->full_path);
-  free(uri->port);
+  free((void*)uri->full_path);
+  free((void*)uri->port);
 
   // free protocol
   if (uri->protocol)
   {
-    free(uri->protocol->name);
-    free(uri->protocol);
+    free((void*)uri->protocol->name);
+    free((void*)uri->protocol);
   }
 
   if (uri->domain)
   {
     // free domain
-    free(uri->domain->subdomain);
-    free(uri->domain->domain);
-    free(uri->domain->extension);
-    free(uri->domain);
+    free((void*)uri->domain->subdomain);
+    free((void*)uri->domain->domain);
+    free((void*)uri->domain->extension);
+    free((void*)uri->domain);
   }
 
   // free path parts
@@ -78,11 +127,11 @@ void free_uri(struct uri* uri)
     struct path_part* next = current->next;
     if (current->is_variable)
     {
-      free(current->variable.name);
-      free(current->variable.value);
-      free(&current->variable);
+      free((void*)current->variable->name);
+      free((void*)current->variable->value);
+      free((void*)current->variable);
     }
-    free(current->path_part);
+    free((void*)current->path_part);
     free(current);
     current = next;
   }
