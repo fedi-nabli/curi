@@ -63,4 +63,6 @@ struct uri* parse_uri(const char* unparsed_url);
 void free_uri(struct uri* uri);
 void print_uri(struct uri* uri);
 
+void set_variable(struct path_part* part, const char* value);
+
 #endif

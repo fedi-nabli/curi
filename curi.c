@@ -1,5 +1,6 @@
 #include "curi.h"
 
+#include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -174,6 +175,40 @@ void print_uri(struct uri* uri)
       }
     }
     current = current->next;
+  }
+}
+
+void set_variable(struct path_part* part, const char* value)
+{
+  if (!part->is_variable)
+    return;
+
+  part->variable->value = strdup(value);
+
+  // Set variable type
+  if (strlen(value) == 0)
+    part->variable->type = UNKNOWN;
+
+  if (isdigit(value[0]) || (value[0] == '-' && isdigit(value[1])))
+  {
+    char* endptr;
+    strtol(value, &endptr, 10);
+    if (*endptr == ('\0'))
+    {
+      part->variable->type = NUMBER;
+    }
+    else
+    {
+      part->variable->type = STRING;
+    }
+  }
+  else if (strcasecmp(value, "true") == 0 || strcasecmp(value, "false") == 0)
+  {
+    part->variable->type = BOOLEAN;
+  }
+  else
+  {
+    part->variable->type = STRING;
   }
 }
 
