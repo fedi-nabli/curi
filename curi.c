@@ -77,8 +77,23 @@ struct uri* parse_uri(const char* unparsed_url)
   rest += 2;
 
   // Parse domain
+  parsed_uri->port = NULL;
   token = strsep(&rest, "/");
-  parsed_uri->domain = parse_domain(token);
+
+  char* domain_part = strdup(token);
+  char* port_part = NULL;
+
+  char* domain_token = strsep(&domain_part, ":");
+  if (domain_token && domain_part)
+  {
+    parsed_uri->domain = parse_domain(domain_token);
+    parsed_uri->port = strdup(domain_part);
+  }
+  else
+  {
+    parsed_uri->domain = parse_domain(token);
+  }
+  free(domain_part);
 
   free(temp);
 
@@ -88,6 +103,7 @@ struct uri* parse_uri(const char* unparsed_url)
 void print_uri(struct uri* uri)
 {
   printf("Full URI: %s\n", uri->full_path);
+  printf("URI Port: %s\n", uri->port ? uri->port : "80");
   printf("URI Protocol:\n");
   printf("  Protocol name: %s\n", uri->protocol->name);
   printf("URI Domain:\n");
@@ -102,7 +118,8 @@ void free_uri(struct uri* uri)
     return;
 
   free((void*)uri->full_path);
-  free((void*)uri->port);
+  if (uri->port)
+    free((void*)uri->port);
 
   // free protocol
   if (uri->protocol)
