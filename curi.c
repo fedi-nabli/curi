@@ -56,6 +56,36 @@ static struct domain* parse_domain(const char* uri)
   return domain;
 }
 
+static struct path_part* parse_path_part(const char* path, struct path_part* prev)
+{
+  struct path_part* part = malloc(sizeof(struct path_part));
+  part->path_part = strdup(path);
+  if (prev)
+  {
+    part->prev = prev;
+  }
+  else
+  {
+    part->prev = NULL;
+  }
+  part->next = NULL;
+  part->is_variable = false;
+  part->variable = NULL;
+
+  // Check if this part is a variable (starts with :)
+  if (path[0] == ':')
+  {
+    struct variable* variable = malloc(sizeof(struct variable));
+    variable->name = strdup(path + 1);
+    variable->value = NULL;
+    variable->type = UNKNOWN;
+    part->is_variable = true;
+    part->variable = variable;
+  }
+
+  return part;
+}
+
 struct uri* parse_uri(const char* unparsed_url)
 {
   struct uri* parsed_uri = malloc(sizeof(struct uri));
@@ -95,6 +125,25 @@ struct uri* parse_uri(const char* unparsed_url)
   }
   free(domain_part);
 
+  struct path_part* current = NULL;
+  while ((token = strsep(&rest, "/")) != NULL)
+  {
+    if (strlen(token) == 0)
+      continue;
+
+    struct path_part* new_part = parse_path_part(token, current);
+
+    if (current)
+    {
+      current->next = new_part;
+    }
+    else
+    {
+      parsed_uri->head = new_part;
+    }
+    current = new_part;
+  }
+
   free(temp);
 
   return parsed_uri;
@@ -106,10 +155,26 @@ void print_uri(struct uri* uri)
   printf("URI Port: %s\n", uri->port ? uri->port : "80");
   printf("URI Protocol:\n");
   printf("  Protocol name: %s\n", uri->protocol->name);
+  printf("URI full domain: %s.%s.%s\n", uri->domain->subdomain, uri->domain->domain, uri->domain->extension);
   printf("URI Domain:\n");
   printf("  Domain subdomain: %s\n", uri->domain->subdomain);
   printf("  Domain main: %s\n", uri->domain->domain);
   printf("  Domain extension: %s\n", uri->domain->extension);
+  printf("URI Path Parts:\n");
+  struct path_part* current = uri->head;
+  while (current)
+  {
+    printf("  - %s\n", current->path_part);
+    if (current->is_variable)
+    {
+      printf("    Variable: %s\n", current->variable->name);
+      if (current->variable->value)
+      {
+        printf("    Value: %s (type %d)\n", current->variable->value, current->variable->type);
+      }
+    }
+    current = current->next;
+  }
 }
 
 void free_uri(struct uri* uri)
